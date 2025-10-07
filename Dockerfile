@@ -18,4 +18,4 @@ COPY src ./src
 RUN ./mvnw package -Dmaven.test.skip=true
 
 # Set the command to run the application
-CMD ["java", "-jar", "target/notes-app-backend-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "target/notesapp-backend-0.0.1-SNAPSHOT.jar"]
