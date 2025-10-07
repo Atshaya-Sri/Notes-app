@@ -11,8 +11,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // Apply this rule to all your API endpoints
-                .allowedOrigins("https://notes-app-2-apin.onrender.com/") // This allows requests from ANY origin
+        // This rule applies to all your API endpoints
+        registry.addMapping("/api/**")
+                // This allows requests from your local development server
+                .allowedOrigins("http://localhost:5173")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     }
 }
