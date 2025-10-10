@@ -5,7 +5,7 @@ import com.atshu.notesapp_backend.service.NoteService;
 import com.atshu.notesapp_backend.models.Note;
 import java.util.List;
 
-
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/api/notes")
 public class NoteController {
