@@ -5,11 +5,11 @@ import com.atshu.notesapp_backend.repository.NoteRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value; // Add this import
 
-import com.google.ai.client.generativeai.GenerativeModel;
-import com.google.ai.client.generativeai.java.GenerativeModelFutures;
-import com.google.ai.client.generativeai.type.Content;
-import com.google.ai.client.generativeai.type.GenerateContentResponse;
-import com.google.common.util.concurrent.ListenableFuture;
+// ADD THESE NEW IMPORTS
+import com.google.genai.Client;
+import com.google.genai.GenerativeModel;
+import com.google.genai.types.GenerateContentResponse;
+
 import java.util.concurrent.Executors;
 import java.util.List;
 
@@ -19,8 +19,7 @@ public class NoteService {
 
     private final NoteRepository noteRepository;
 
-    @Value("${GEMINI_API_KEY}") // Injects the key from Render
-    private String geminiApiKey;
+
     public NoteService(NoteRepository noteRepository) {
         this.noteRepository = noteRepository;
     }
@@ -75,6 +74,7 @@ public class NoteService {
         return noteRepository.findByStatus(status);
     }
 
+    // ✅ Summarize note
     public String summarizeNote(Long id) {
         Note note = getNoteById(id);
         String noteContent = note.getContent();
@@ -83,24 +83,20 @@ public class NoteService {
         }
 
         try {
-            // Set up the model
-            GenerativeModel gm = new GenerativeModel("gemini-1.5-flash-latest", geminiApiKey);
-            GenerativeModelFutures model = GenerativeModelFutures.from(gm);
+            // The client automatically finds the API key from the environment
+            Client client = new Client();
 
             // Create the prompt
-            Content content = new Content.Builder()
-                    .addText("Summarize the following note in one or two sentences: " + noteContent)
-                    .build();
+            String prompt = "Summarize the following note in one or two sentences: " + noteContent;
 
             // Send the request
-            ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
-            GenerateContentResponse result = response.get(); // Waits for the response
+            GenerateContentResponse response = client.models()
+                    .generateContent("gemini-1.5-flash-latest", prompt, null);
 
             // Get and return the text
-            return result.getText();
+            return response.text();
 
         } catch (Exception e) {
-            // Handle exceptions
             e.printStackTrace();
             return "Error: Could not summarize note. " + e.getMessage();
         }
