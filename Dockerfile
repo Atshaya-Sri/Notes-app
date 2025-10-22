@@ -1,21 +1,23 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:17-jdk-slim
+# Use an official Maven image with JDK 17
+FROM maven:3.9.8-eclipse-temurin-17 AS build
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the Maven wrapper and the pom.xml file
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+# Copy only pom.xml first (to leverage Docker cache)
+COPY pom.xml .
 
-# Download project dependencies
-RUN ./mvnw dependency:go-offline
+# Pre-download dependencies
+RUN mvn dependency:go-offline
 
-# Copy the rest of the application source code
+# Copy the rest of the source code
 COPY src ./src
 
-# Package the application
-RUN ./mvnw package -Dmaven.test.skip=true
+# Build the app (skip tests for faster build)
+RUN mvn clean package -Dmaven.test.skip=true
 
-# Set the command to run the application
-CMD ["java", "-jar", "target/notesapp-backend-0.0.1-SNAPSHOT.jar"]
+# --- Runtime image ---
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+ENTRYPOINT ["java","-jar","app.jar"]

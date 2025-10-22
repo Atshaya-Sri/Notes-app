@@ -3,22 +3,29 @@ package com.atshu.notesapp_backend.service;
 import com.atshu.notesapp_backend.models.Note;
 import com.atshu.notesapp_backend.repository.NoteRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value; // Add this import
+import org.springframework.beans.factory.annotation.Value;
 
-// ADD THESE NEW IMPORTS
-import com.google.genai.Client;
-import com.google.genai.GenerativeModel;
-import com.google.genai.types.GenerateContentResponse;
+import com.google.cloud.vertexai.VertexAI;
+// import com.google.cloud.vertexai.api.GenerateContentRequest;
+// import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.Content;
+import com.google.cloud.vertexai.api.Part;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
 
-import java.util.concurrent.Executors;
+import java.io.IOException;
 import java.util.List;
-
 
 @Service
 public class NoteService {
 
     private final NoteRepository noteRepository;
 
+    @Value("${GOOGLE_CLOUD_PROJECT_ID}")
+    private String projectId;
+
+    @Value("${GOOGLE_CLOUD_LOCATION:us-central1}") // Default region
+    private String location;
 
     public NoteService(NoteRepository noteRepository) {
         this.noteRepository = noteRepository;
@@ -57,12 +64,12 @@ public class NoteService {
         noteRepository.deleteById(id);
     }
 
-    // ✅ Search notes (simple example)
+    // ✅ Search notes
     public List<Note> searchNotes(String query) {
         return noteRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(query, query);
     }
 
-    // ✅ Update status (used for archive, bin, restore)
+    // ✅ Update status
     public Note updateNoteStatus(Long id, String status) {
         Note note = getNoteById(id);
         note.setStatus(status);
@@ -74,28 +81,40 @@ public class NoteService {
         return noteRepository.findByStatus(status);
     }
 
-    // ✅ Summarize note
+    // ✅ AI Summarization (Gemini via Vertex AI)
     public String summarizeNote(Long id) {
         Note note = getNoteById(id);
         String noteContent = note.getContent();
+
         if (noteContent == null || noteContent.trim().isEmpty()) {
             return "Note is empty, nothing to summarize.";
         }
 
-        try {
-            // The client automatically finds the API key from the environment
-            Client client = new Client();
+        try (VertexAI vertexAI = new VertexAI(projectId, location)) {
 
-            // Create the prompt
-            String prompt = "Summarize the following note in one or two sentences: " + noteContent;
+            // Initialize Gemini model
+            GenerativeModel model = new GenerativeModel("gemini-1.5-flash", vertexAI);
 
-            // Send the request
-            GenerateContentResponse response = client.models()
-                    .generateContent("gemini-1.5-flash-latest", prompt, null);
+            // Build prompt
+            String prompt = "Summarize the following note in one or two sentences:\n\n" + noteContent;
 
-            // Get and return the text
-            return response.text();
+            // Send request to Vertex AI
+            GenerateContentResponse response = model.generateContent(
+                    Content.newBuilder()
+                            .addParts(Part.newBuilder().setText(prompt).build())
+                            .build()
+            );
 
+            // Extract and return summary text
+            String summary = response.getCandidatesCount() > 0
+                    ? response.getCandidates(0).getContent().getParts(0).getText()
+                    : "No summary generated.";
+
+            return summary.trim();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error initializing Vertex AI client: " + e.getMessage();
         } catch (Exception e) {
             e.printStackTrace();
             return "Error: Could not summarize note. " + e.getMessage();
