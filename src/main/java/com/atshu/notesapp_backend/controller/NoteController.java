@@ -92,4 +92,13 @@ public class NoteController {
     public List<Note> getBinnedNotes() {
         return noteService.getNotesByStatus("binned");
     }
+
+    // ... inside your NoteController class ...
+
+    // ✅ Summarize a note
+    @PostMapping("/{id}/summarize")
+    public String summarizeNote(@PathVariable Long id) {
+        // We return a simple String (the summary)
+        return noteService.summarizeNote(id);
+    }
 }
