@@ -6,7 +6,7 @@ import com.atshu.notesapp_backend.models.Note;
 import java.util.List;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-@CrossOrigin(origins = {"https://notes-app-2-apin.onrender.com/api/notes", "http://localhost:5173"},
+@CrossOrigin(origins = { "https://shaywrites.netlify.app/", "http://localhost:5173"},
         methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
 @RestController
 @RequestMapping("/api/notes")
