@@ -22,6 +22,10 @@ public class Note {
     private String title;
     private String content;
 
+    private String status = "active";
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
     @ElementCollection
     private List<String> tags;
 

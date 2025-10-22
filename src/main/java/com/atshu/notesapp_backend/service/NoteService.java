@@ -1,46 +1,67 @@
 package com.atshu.notesapp_backend.service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
-import com.atshu.notesapp_backend.repository.NoteRepository;
 import com.atshu.notesapp_backend.models.Note;
+import com.atshu.notesapp_backend.repository.NoteRepository;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
 public class NoteService {
 
-    @Autowired
-    private NoteRepository noteRepository;
+    private final NoteRepository noteRepository;
 
-    public Note saveNote(Note note) {
-    note.setSynced(true); // Mark as synced before saving
-    return noteRepository.save(note); // Save to the DB in one step
+    public NoteService(NoteRepository noteRepository) {
+        this.noteRepository = noteRepository;
     }
 
+    // ✅ Create note
+    public Note createNote(Note note) {
+        if (note.getStatus() == null || note.getStatus().isEmpty()) {
+            note.setStatus("active");
+        }
+        return noteRepository.save(note);
+    }
+
+    // ✅ Get all notes
     public List<Note> getAllNotes() {
         return noteRepository.findAll();
     }
+
+    // ✅ Get note by ID
     public Note getNoteById(Long id) {
-    return noteRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Note not found with id: " + id));
-}
+        return noteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+    }
 
-public Note updateNote(Long id, Note noteDetails) {
-    Note existingNote = getNoteById(id);
+    // ✅ Update note
+    public Note updateNote(Long id, Note updatedNote) {
+        Note existingNote = getNoteById(id);
+        existingNote.setTitle(updatedNote.getTitle());
+        existingNote.setContent(updatedNote.getContent());
+        existingNote.setStatus(updatedNote.getStatus());
+        return noteRepository.save(existingNote);
+    }
 
-    existingNote.setTitle(noteDetails.getTitle());
-    existingNote.setContent(noteDetails.getContent());
-    existingNote.setTags(noteDetails.getTags());
-    existingNote.setSynced(true); // always mark synced
+    // ✅ Delete note
+    public void deleteNote(Long id) {
+        noteRepository.deleteById(id);
+    }
 
-    return noteRepository.save(existingNote);
-}
+    // ✅ Search notes (simple example)
+    public List<Note> searchNotes(String query) {
+        return noteRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(query, query);
+    }
 
-public void deleteNote(Long id) {
-    Note existingNote = getNoteById(id);
-    noteRepository.delete(existingNote);
-}
-public List<Note> searchNotes(String query) {
-    return noteRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(query, query);
-}
+    // ✅ Update status (used for archive, bin, restore)
+    public Note updateNoteStatus(Long id, String status) {
+        Note note = getNoteById(id);
+        note.setStatus(status);
+        return noteRepository.save(note);
+    }
+
+    // ✅ Get notes by status
+    public List<Note> getNotesByStatus(String status) {
+        return noteRepository.findByStatus(status);
+    }
 }

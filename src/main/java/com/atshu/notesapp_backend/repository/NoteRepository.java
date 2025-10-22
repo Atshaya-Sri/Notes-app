@@ -4,6 +4,7 @@ import com.atshu.notesapp_backend.models.Note;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
+    List<Note> findByStatus(String status);
     List<Note> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCase(String title, String content);
 
 }
